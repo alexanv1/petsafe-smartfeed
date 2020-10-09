@@ -1,5 +1,5 @@
 import json
-from . import api
+from .api import *
 
 
 def get_feeders(token):
@@ -10,7 +10,7 @@ def get_feeders(token):
     :return: list of Feeders
 
     """
-    response = api.sf_get('feeders', token)
+    response = sf_get('feeders', token)
     response.raise_for_status()
     content = response.content.decode('UTF-8')
     return [DeviceSmartFeed(token, feeder_data) for feeder_data in json.loads(content)]
@@ -29,7 +29,7 @@ class DeviceSmartFeed:
         Updates self.data to the feeder's current online state.
 
         """
-        response = api.sf_get(self.api_path, token=self.token)
+        response = sf_get(self.api_path, token=self.token)
         response.raise_for_status()
         self.data = json.loads(response.content.decode('UTF-8'))
 
@@ -42,7 +42,7 @@ class DeviceSmartFeed:
         :param force_update: if True, update ALL data after PUT. Defaults to False.
 
         """
-        response = api.sf_put(self.api_path + 'settings/' + setting, token=self.token, data={
+        response = sf_put(self.api_path + 'settings/' + setting, token=self.token, data={
             'value': value
         })
         response.raise_for_status()
@@ -60,7 +60,7 @@ class DeviceSmartFeed:
         :return: the APIs response in JSON.
 
         """
-        response = api.sf_get(self.api_path + 'messages?days=' + str(days), token=self.token)
+        response = sf_get(self.api_path + 'messages?days=' + str(days), token=self.token)
         response.raise_for_status()
         return json.loads(response.content.decode('UTF-8'))
 
@@ -88,7 +88,7 @@ class DeviceSmartFeed:
         """
         if slow_feed is None:
             slow_feed = self.data['settings']['slow_feed']
-        response = api.sf_post(self.api_path + 'meals', self.token, data={
+        response = sf_post(self.api_path + 'meals', self.token, data={
             'amount': amount,
             'slow_feed': slow_feed
         })
@@ -150,6 +150,11 @@ class DeviceSmartFeed:
             return 'dead'
         else:
             return 'unknown'
+
+    @property
+    def available(self):
+        """If true, the feeder is connected\available."""
+        return self.data['connection_status'] == 2
         
     @property
     def paused(self):
@@ -195,3 +200,7 @@ class DeviceSmartFeed:
     @pet_type.setter
     def pet_type(self, value):
         self.put_setting('pet_type', value)
+
+    @property
+    def data_json(self):
+        return self.data
